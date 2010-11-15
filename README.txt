@@ -40,3 +40,10 @@ an experiment.  The Response Time timer should be reset whenever a
 stimulus is presented.
 
 Note: There is some known drift in the timers. 
+
+
+Windows Specific Issues
+
+Sometimes, windows fails at detecting XID devices.  Running
+detect_xid_devices() a second time should result in finding the
+devices.
