@@ -1,2 +1,4 @@
 *.pyc
 .ropeproject
+distribute-*
+pyxid.egg-info
