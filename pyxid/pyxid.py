@@ -96,6 +96,11 @@ class XidDevice(object):
         self.init_device()
 
 
+    def __del__(self):
+        self.con.close()
+        del self.con
+
+
     def init_device(self):
         """
         Initializes the device with the proper keymaps and name
