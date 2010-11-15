@@ -1,11 +1,8 @@
-import distribute_setup
-distribute_setup.use_setuptools()
-
 from setuptools import setup, find_packages
 
 setup(
     name = "pyxid",
-    version = "1.0b1",
+    version = "1.0b2",
     packages = find_packages(),
     install_requires = ["pyserial>=2.5"],
     author = "Grant Limberg",
