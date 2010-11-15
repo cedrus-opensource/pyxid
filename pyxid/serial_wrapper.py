@@ -20,6 +20,8 @@ class SerialPort(object):
     def available_ports():
         if sys.platform == 'darwin':
             return MacSerialPort.available_ports()
+        elif sys.platform == 'linux2':
+            return LinuxSerialPort.available_ports()
         else:
             return GenericSerialPort.available_ports()
 
