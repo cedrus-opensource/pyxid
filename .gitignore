@@ -2,3 +2,6 @@
 .ropeproject
 distribute-*
 pyxid.egg-info
+*.gz
+dist
+build
