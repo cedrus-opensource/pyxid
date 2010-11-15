@@ -7,6 +7,8 @@ class SerialPort(object):
     def __init__(self, serial_port, baud_rate=115200):
         if sys.platform == 'darwin':
             self.impl = MacSerialPort(serial_port, baud_rate)
+        elif sys.platform == 'linux2':
+            self.impl = LinuxSerialPort(serial_port, baud_rate)
         else:
             self.impl = GenericSerialPort(serial_port, baud_rate)
 
@@ -20,6 +22,34 @@ class SerialPort(object):
             return MacSerialPort.available_ports()
         else:
             return GenericSerialPort.available_ports()
+
+
+class LinuxSerialPort(object):
+    """
+    USB-serial devices on Linux show up as /dev/ttyUSB?
+
+    pySerial expects /dev/tty? (no USB).
+    """
+    def __init__(self, serial_port, baud_rate=115200):
+        self.serial_port = serial_port
+        self.serial_port.setBaudrate(baud_rate)
+
+
+    def __getattr__(self, attr):
+        return getattr(self.serial_port, attr)
+
+
+    @staticmethod
+    def available_ports():
+        usb_serial_ports = filter(
+            (lambda x: x.startswith('ttyUSB')),
+            os.listdir('/dev'))
+
+        ports = []
+        for p in usb_serial_ports:
+            ports.append(serial_for_url('/dev/'+p, do_not_open=True))
+
+        return ports
 
 
 class GenericSerialPort(object):
