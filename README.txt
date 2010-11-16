@@ -39,8 +39,12 @@ Response Time Timer.  The Base Timer should be reset at the start of
 an experiment.  The Response Time timer should be reset whenever a
 stimulus is presented.
 
-Note: There is some known drift in the timers. 
-
+At the time of this library release, there is a known issue with clock
+drift in XID devices.  Our hardware/firmware developer is currently
+looking into the issue.  Once it has been resolved, a new version of
+this library will be released.  For the time being, the time field in
+the dict returned by XidDevice.get_next_response() is 0 until the fix
+is applied in a subsequent release.
 
 Windows Specific Issues
 

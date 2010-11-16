@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "pyxid",
-    version = "1.0b2",
+    version = "1.0b3",
     packages = find_packages(),
     install_requires = ["pyserial>=2.5"],
     author = "Grant Limberg",
@@ -12,7 +12,7 @@ setup(
     description = "Pure python library for communicating with Cedrus XID devices.",
     long_description = open('README.txt').read(),
     license = "BSD",
-    keywords = "cedrus xid XID",
+    keywords = "cedrus xid XID stimulus response data collection",
     url = "http://www.github.com/cedrus-opensource/pyxid/",
     classifiers = [
         "Development Status :: 4 - Beta",

@@ -122,7 +122,14 @@ class XidConnection(object):
 
 
     def get_current_response(self):
-        response = {'time': self.__last_resp_rt,
+        """
+        reads the current response data from the object and returns
+        it in a dict.
+
+        Currently 'time' is reported as 0 until clock drift issues are
+        resolved.
+        """
+        response = {'time': 0, #self.__last_resp_rt,
                     'pressed': self.__last_resp_pressed,
                     'key': self.__last_resp_key,
                     'port': self.__last_resp_port}

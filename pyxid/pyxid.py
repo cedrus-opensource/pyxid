@@ -84,7 +84,11 @@ class XidDevice(object):
 
         XidDevice.reset_rt_timer()
 
+    Developers Note:  Currently there is a known issue of clock drift
+    in the XID devices.  Due to this, the dict returned by
+    XidDevice.get_next_response() returns 0 for the reaction time value.
 
+    This issue will be resolved in a future release of this library.
     """
     def __init__(self, xid_connection):
         self.con = xid_connection
@@ -199,6 +203,19 @@ class XidDevice(object):
         """
         Pops the response at the beginning of the response queue
         and returns it.
+
+        This function returns a dict object with the following keys:
+
+            pressed:  A boolean value of whether the event was a keypress
+                      or key release.
+            key:      The key on the device that was pressed.  This is a
+                      0 based index.
+            port:     Device port the response came from.  Typically this
+                      is 0 on RB-series devices, and 2 on SV-1 voice key devices.
+            time:     For the time being, this just returns 0.  There is
+                      currently an issue with clock drift in the Cedrus XID
+                      devices.  Once we have this issue resolved, time will
+                      report the value of the RT timer in miliseconds.
         """
         response = self.response_queue[0]
         self.response_queue = self.response_queue[1:]
