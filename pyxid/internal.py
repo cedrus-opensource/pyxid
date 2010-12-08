@@ -18,6 +18,53 @@ class XidConnection(object):
         self.__last_resp_key = 0
         self.__last_resp_rt = 0
         self.__first_valid_packet = -1
+        self.__using_stim_tracker = False
+        self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
+        self.__line_state = 0
+
+    def set_using_stim_tracker(self, using_st=True):
+        if using_st:
+            self.__using_stim_tracker = True
+            self.__set_lines_cmd = 'mh'+chr(0)+chr(0)
+        else:
+            self.__using_stim_tracker = False
+            self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
+
+    def clear_digital_output_lines(self, lines):
+        if lines not in range(0, 256):
+            raise ValueError('lines must be between 0 and 255')
+
+        local_lines = ~lines
+        if local_lines < 0:
+            local_lines += 256
+
+        if self.__using_stim_tracker:
+            self.__set_lines_cmd = 'mh'+chr(local_lines)+chr(0)
+        else:
+            tmp_lines = ~local_lines
+            if tmp_lines < 0:
+                tmp_lines += 256
+
+            self.__set_lines_cmd = 'ah'+chr(tmp_lines)+chr(0)
+
+        self.write(str(self.__set_lines_cmd))
+        self.__line_state = lines
+
+
+    def set_digital_output_lines(self, lines):
+        if lines not in range(0, 256):
+            raise ValueError('lines must be between 0 and 255')
+
+        if self.__using_stim_tracker:
+            self.__set_lines_cmd = 'mh'+chr(lines)+chr(0)
+        else:
+            lines_tmp = ~lines
+            if lines_tmp < 0:
+                lines_tmp += 256
+            self.__set_lines_cmd = 'ah'+chr(lines_tmp)+chr(0)
+
+        self.write(str(self.__set_lines_cmd))
+        self.__line_state = lines
 
 
     def flush_input(self):
@@ -38,7 +85,7 @@ class XidConnection(object):
         self.serial_port.close()
 
 
-    def send_xid_command(self, command, bytes_expected=0,timeout=0.1):
+    def send_xid_command(self, command, bytes_expected=0, timeout=0.1):
         self.write(command)
 
         self.serial_port.timeout = timeout
