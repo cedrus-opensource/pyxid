@@ -30,13 +30,16 @@ class XidConnection(object):
             self.__using_stim_tracker = False
             self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
 
-    def clear_digital_output_lines(self, lines):
+    def clear_digital_output_lines(self, lines, leave_remaining_lines=False):
         if lines not in range(0, 256):
             raise ValueError('lines must be between 0 and 255')
 
         local_lines = ~lines
         if local_lines < 0:
             local_lines += 256
+
+        if leave_remaining_lines:
+            local_lines = local_lines & self.__line_state
 
         if self.__using_stim_tracker:
             self.__set_lines_cmd = 'mh'+chr(local_lines)+chr(0)
@@ -48,12 +51,15 @@ class XidConnection(object):
             self.__set_lines_cmd = 'ah'+chr(tmp_lines)+chr(0)
 
         self.write(str(self.__set_lines_cmd))
-        self.__line_state = lines
+        self.__line_state = local_lines
 
 
-    def set_digital_output_lines(self, lines):
+    def set_digital_output_lines(self, lines, leave_remaining_lines=False):
         if lines not in range(0, 256):
             raise ValueError('lines must be between 0 and 255')
+
+        if leave_remaining_lines:
+            lines |= self.__line_state
 
         if self.__using_stim_tracker:
             self.__set_lines_cmd = 'mh'+chr(lines)+chr(0)
