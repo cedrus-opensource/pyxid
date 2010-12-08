@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "pyxid",
-    version = "1.0b3",
+    version = "1.0b4",
     packages = find_packages(),
     install_requires = ["pyserial>=2.5"],
     author = "Grant Limberg",
