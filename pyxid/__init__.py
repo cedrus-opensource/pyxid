@@ -38,8 +38,9 @@ def test_event_loop(devices):
 
     while True:
         for d in devices:
-            d.poll_for_response()
+            if d.is_response_device():
+                d.poll_for_response()
 
-            if d.response_queue_size() > 0:
-                print d.device_name, d.get_next_response()
+                if d.response_queue_size() > 0:
+                    print d.device_name, d.get_next_response()
 
