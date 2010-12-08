@@ -14,14 +14,15 @@ attached device(s) for responses.  Heres's an example of how to do so:
     devices = pyxid.get_xid_devices()
 
     dev = devices[0] # get the first device to use
-    dev.reset_base_timer()
-    dev.reset_rt_timer()
+    if dev.is_response_device():
+        dev.reset_base_timer()
+        dev.reset_rt_timer()
 
-    while True:
-        dev.poll_for_response()
-        if dev.respone_queue_size() > 0:
-            response = dev.get_next_response()
-            # do something with the response
+        while True:
+            dev.poll_for_response()
+            if dev.respone_queue_size() > 0:
+                response = dev.get_next_response()
+                # do something with the response
 
 
 The response is a python dict with the following keys:
@@ -45,6 +46,21 @@ looking into the issue.  Once it has been resolved, a new version of
 this library will be released.  For the time being, the time field in
 the dict returned by XidDevice.get_next_response() is 0 until the fix
 is applied in a subsequent release.
+
+
+StimTracker
+
+Support for Cedrus StimTracker devices is now included.  On StimTracker
+devices, there are the following methods:
+
+    set_pulse_duration()
+    activate_line()
+    clear_line()
+
+See the docstring for activate_line() for documentation on how to use it.
+
+These methods are not available if the device is a response pad.
+
 
 Windows Specific Issues
 
