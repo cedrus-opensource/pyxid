@@ -176,7 +176,10 @@ class ResponseDevice(BaseDevice):
     def set_pulse_duration(self, duration):
         raise NotImplementedError('Not implemented')
 
-    def activate_line(self, lines):
+    def activate_line(self, lines, a_bool):
+        raise NotImplementedError('Not implemented')
+
+    def clear_line(self, lines, a_bool):
         raise NotImplementedError('Not implemented')
 
 class StimTracker(BaseDevice):
@@ -207,8 +210,13 @@ class StimTracker(BaseDevice):
 
     def set_pulse_duration(self, duration):
         """
-        Sets the pulse duration for events
+        Sets the pulse duration for events in miliseconds when activate_line
+        is called
         """
+        if duration > 4294967295:
+            raise ValueError('Duration is too long. Please choose a value '
+                             'less than 4294967296.')
+
         big_endian = hex(duration)[2:]
         if len(big_endian) % 2 != 0:
             big_endian = '0'+big_endian
@@ -227,7 +235,7 @@ class StimTracker(BaseDevice):
 
         self.con.send_xid_command(command, 0)
 
-    def activate_line(self, lines):
+    def activate_line(self, lines, leave_remaining_lines=False):
         """
         Triggers an output line on StimTracker.
 
@@ -250,11 +258,36 @@ class StimTracker(BaseDevice):
         if not type(lines) is list:
             lines = [lines]
 
+        for l in lines:
+            if l < 1 or l > 8:
+                raise ValueError('Line numbers must be between 1 and 8 '
+                                 '(inclusive)')
+
         active_lines = 0
         for l in lines:
             active_lines |= self._lines[l]
 
-        self.con.set_digital_output_lines(active_lines)
+        self.con.set_digital_output_lines(active_lines,
+                                          leave_remaining_lines)
+
+    def clear_line(self, lines, leave_remaining_lines=False):
+        """
+        The inverse of activate_line.  If a line is active, it deactivates it.
+        """
+        if not type(lines) is list:
+            lines = [lines]
+
+        for l in lines:
+            if l < 1 or l > 8:
+                raise ValueError('Line numbers must be between 1 and 8 '
+                                 '(inclusive)')
+
+        lines_to_clear = 0
+        for l in lines:
+            lines_to_clear |= self._lines[l]
+
+        self.con.clear_digital_output_lines(lines_to_clear,
+                                            leave_remaining_lines)
 
 class XidError(Exception):
     pass
