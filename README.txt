@@ -6,7 +6,7 @@ stimulus/response testing experiments.
 
 This handles all of the low level device handling for XID devices in
 python projects.  The developer using this library must poll the
-attached device(s) for responses.  Heres's an example of how to do so:
+attached device(s) for responses.  Here's an example of how to do so:
 
     import pyxid
 
@@ -20,7 +20,7 @@ attached device(s) for responses.  Heres's an example of how to do so:
 
         while True:
             dev.poll_for_response()
-            if dev.respone_queue_size() > 0:
+            if dev.response_queue_size() > 0:
                 response = dev.get_next_response()
                 # do something with the response
 
