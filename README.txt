@@ -1,4 +1,4 @@
-Python library for interfacing with Cedrus XID devices
+Python library for interfacing with Cedrus XID and StimTracker devices
 
 XID (eXperiment Interface Device) devices are used in software such as
 SuperLab, Presentation, and ePrime for receiving input as part of
@@ -33,6 +33,23 @@ The response is a python dict with the following keys:
     time: value of the Response Time timer when the key was hit/released
 
 
+StimTracker
+
+Support for Cedrus StimTracker devices is now included.  On StimTracker
+devices, there are the following methods:
+
+    set_pulse_duration()
+    activate_line()
+    clear_line()
+
+See the docstring for activate_line() for documentation on how to use it.
+
+These methods are not available if the device is a response pad.
+
+StimTracker is used in software such as SuperLab, Presentation and ePrime
+for sending event markers.
+
+
 Timers
 
 Each Cedrus XID device has an internal timer a Base Timer and a
@@ -46,20 +63,6 @@ looking into the issue.  Once it has been resolved, a new version of
 this library will be released.  For the time being, the time field in
 the dict returned by XidDevice.get_next_response() is 0 until the fix
 is applied in a subsequent release.
-
-
-StimTracker
-
-Support for Cedrus StimTracker devices is now included.  On StimTracker
-devices, there are the following methods:
-
-    set_pulse_duration()
-    activate_line()
-    clear_line()
-
-See the docstring for activate_line() for documentation on how to use it.
-
-These methods are not available if the device is a response pad.
 
 
 Windows Specific Issues

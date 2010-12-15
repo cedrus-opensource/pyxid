@@ -19,6 +19,10 @@ class XidConnection(object):
         self.__last_resp_rt = 0
         self.__first_valid_packet = -1
         self.__using_stim_tracker = False
+        # the set lines cmd on RB-series and other XID response
+        # devices begins with 'ah'.  If, however, a StimTracker is
+        # being used, this will be set to 'mh' instead.  'mh' is to be
+        # used for StimTracker only.  It has no effect on response devices.
         self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
         self.__line_state = 0
 
@@ -26,9 +30,11 @@ class XidConnection(object):
         if using_st:
             self.__using_stim_tracker = True
             self.__set_lines_cmd = 'mh'+chr(0)+chr(0)
+            self.__needs_interbyte_delay = False
         else:
             self.__using_stim_tracker = False
             self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
+            self.__needs_interbyte_delay = True
 
     def clear_digital_output_lines(self, lines, leave_remaining_lines=False):
         if lines not in range(0, 256):
