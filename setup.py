@@ -2,14 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name = "pyxid",
-    version = "1.0b4",
+    version = "1.0b5",
     packages = find_packages(),
     install_requires = ["pyserial>=2.5"],
     author = "Grant Limberg",
     author_email = "glimberg@cedrus.com",
     maintainer = "Cedrus Corporation",
     maintainer_email = "opensource@cedrus.com",
-    description = "Pure python library for communicating with Cedrus XID devices.",
+    description = ("Pure python library for communicating with Cedrus XID "
+                   "and StimTrackerdevices."),
     long_description = open('README.txt').read(),
     license = "BSD",
     keywords = "cedrus xid XID stimulus response data collection",
