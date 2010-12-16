@@ -188,7 +188,7 @@ class XidConnection(object):
         Currently 'time' is reported as 0 until clock drift issues are
         resolved.
         """
-        response = {'time': 0, #self.__last_resp_rt,
+        response = {'time': self.__last_resp_rt,
                     'pressed': self.__last_resp_pressed,
                     'key': self.__last_resp_key,
                     'port': self.__last_resp_port}
