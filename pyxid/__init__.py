@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pyxid
+from pyxid_impl import *
 
 __all__ = ["get_xid_devices", "get_xid_device"]
 
@@ -9,11 +9,11 @@ def get_xid_devices():
     Returns a list of all Xid devices connected to your computer.
     """
     devices = []
-    scanner = pyxid.XidScanner()
+    scanner = XidScanner()
     for i in range(scanner.device_count()):
         com = scanner.device_at_index(i)
         com.open()
-        device = pyxid.XidDevice(com)
+        device = XidDevice(com)
         devices.append(device)
     return devices
 
