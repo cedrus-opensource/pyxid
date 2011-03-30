@@ -2,7 +2,13 @@
 
 from pyxid_impl import *
 
-__all__ = ["get_xid_devices", "get_xid_device"]
+# Flag for whether or not the response pad timer value should be
+# returned from XidDevice.get_next_response()
+#
+# Set this to true if you want to return the time reported by the
+# response pad.  See the README file for reasons you may not want to
+# do this.
+use_response_pad_timer = False
 
 def get_xid_devices():
     """
@@ -25,10 +31,10 @@ def get_xid_device(device_number):
     Raises ValueError if the device at the passed in index doesn't
     exist.
     """
-    scanner = pyxid.XidScanner()
+    scanner = XidScanner()
     com = scanner.device_at_index(device_number)
     com.open()
-    return pyxid.XidDevice(com)
+    return XidDevice(com)
 
 
 def test_event_loop(devices):

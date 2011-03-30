@@ -3,6 +3,7 @@ from struct import unpack
 import time
 from constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
      KEY_RELEASE_BITMASK, INVALID_PORT_BITS
+import pyxid
 
 class XidConnection(object):
     def __init__(self, serial_port, baud_rate=115200):
@@ -188,7 +189,9 @@ class XidConnection(object):
         Currently 'time' is reported as 0 until clock drift issues are
         resolved.
         """
-        response = {'time': 0, #self.__last_resp_rt,
+        response_time = (self.__last_resp_rt if pyxid.use_response_pad_timer
+                         else 0)
+        response = {'time': response_time,
                     'pressed': self.__last_resp_pressed,
                     'key': self.__last_resp_key,
                     'port': self.__last_resp_port}

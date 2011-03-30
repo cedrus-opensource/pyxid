@@ -59,11 +59,18 @@ stimulus is presented.
 
 At the time of this library release, there is a known issue with clock
 drift in XID devices.  Our hardware/firmware developer is currently
-looking into the issue.  Once it has been resolved, a new version of
-this library will be released.  For the time being, the time field in
-the dict returned by XidDevice.get_next_response() is 0 until the fix
-is applied in a subsequent release.
+looking into the issue.  
 
+Given the issue, use of the response timer built into the response
+pads is optional.  If you wish to use the time reported from the
+response pads, do the following after importing the pyxid library:
+
+    import pyxid
+    pyxid.use_response_pad_timer = True
+
+This will return the time in the 'time' field of the dict returned by
+XidDevice.get_next_response(), otherwise, the 'time' field will
+contain 0.
 
 Windows Specific Issues
 
