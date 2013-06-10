@@ -126,7 +126,7 @@ class XidConnection(object):
 
 
     def check_for_keypress(self):
-        response = self.read(6)
+        response = self.read(self.__xid_packet_size)
 
         response_found = NO_KEY_DETECTED
         if len(response) > 0:
@@ -139,7 +139,7 @@ class XidConnection(object):
     def xid_input_found(self):
         input_found = NO_KEY_DETECTED
 
-        if self.__bytes_in_buffer >= 6:
+        if self.__bytes_in_buffer >= self.__xid_packet_size:
             last_byte_index = self.__bytes_in_buffer - self.__xid_packet_size
 
             i = 0
@@ -148,7 +148,7 @@ class XidConnection(object):
                     (k, params, time) = unpack('<cBI',
                                                self.__response_buffer[
                                                    last_byte_index:
-                                                   last_byte_index+6])
+                                                   last_byte_index+self.__xid_packet_size])
                 except Exception:
                     i += 1
                     continue
