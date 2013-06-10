@@ -11,7 +11,6 @@ class XidConnection(object):
         self.serial_port.baudrate = baud_rate
         self.__needs_interbyte_delay = True
         self.__xid_packet_size = 6
-        self.__bytes_in_buffer = 0
         self.__response_buffer = ''
         self.__last_resp_pressed = False
         self.__last_resp_port = 0
@@ -133,7 +132,6 @@ class XidConnection(object):
 
         response_found = NO_KEY_DETECTED
         if len(response) > 0:
-            self.__bytes_in_buffer += len(response)
             self.__response_buffer += response
             response_found = self.xid_input_found()
 
@@ -142,8 +140,8 @@ class XidConnection(object):
     def xid_input_found(self):
         input_found = NO_KEY_DETECTED
 
-        if self.__bytes_in_buffer >= self.__xid_packet_size:
-            last_byte_index = self.__bytes_in_buffer - self.__xid_packet_size
+        if len(self.__response_buffer) >= self.__xid_packet_size:
+            last_byte_index = len(self.__response_buffer) - self.__xid_packet_size
 
             i = 0
             while i <= last_byte_index:
@@ -207,7 +205,6 @@ class XidConnection(object):
         if self.__first_valid_packet != -1:
             self.__response_buffer = self.__response_buffer[
                 self.__first_valid_packet + self.__xid_packet_size:]
-            self.__bytes_in_buffer -= self.__xid_packet_size
             self.__first_valid_packet = -1
 
 
