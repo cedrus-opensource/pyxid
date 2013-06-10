@@ -11,7 +11,6 @@ class XidConnection(object):
         self.serial_port.baudrate = baud_rate
         self.__needs_interbyte_delay = True
         self.__xid_packet_size = 6
-        self.__default_read_timeout = 0
         self.__bytes_in_buffer = 0
         self.__response_buffer = ''
         self.__last_resp_pressed = False
@@ -103,7 +102,7 @@ class XidConnection(object):
 
         self.serial_port.timeout = timeout
         response = self.read(bytes_expected)
-        self.serial_port.timeout = self.__default_read_timeout
+        self.serial_port.timeout = 0 # zero means NON-blocking, as in: return IMMEDIATELY. (see pySerial docs)
 
         return response
 
@@ -111,6 +110,10 @@ class XidConnection(object):
     def read(self, bytes_to_read):
         return self.serial_port.read(bytes_to_read)
 
+
+    def read_nonblocking(self, bytes_to_read):
+        self.serial_port.timeout = 0 # zero means NON-blocking, as in: return IMMEDIATELY. (see pySerial docs)
+        return self.serial_port.read(bytes_to_read)
 
 
     def write(self, command):
@@ -126,7 +129,7 @@ class XidConnection(object):
 
 
     def check_for_keypress(self):
-        response = self.read(self.__xid_packet_size)
+        response = self.read_nonblocking(self.__xid_packet_size)
 
         response_found = NO_KEY_DETECTED
         if len(response) > 0:
