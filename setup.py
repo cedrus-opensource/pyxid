@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name = "pyxid",
-    version = "1.0",
+    version = "1.1",
     packages = find_packages(),
     install_requires = ["pyserial>=2.5"],
     author = "Grant Limberg",
-    author_email = "glimberg@cedrus.com",
+    author_email = "developers@cedrus.com",
     maintainer = "Cedrus Corporation",
     maintainer_email = "opensource@cedrus.com",
     description = ("Pure python library for communicating with Cedrus XID "

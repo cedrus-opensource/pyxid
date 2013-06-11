@@ -12,11 +12,7 @@ class XidConnection(object):
         self.__needs_interbyte_delay = True
         self.__xid_packet_size = 6
         self.__response_buffer = ''
-        self.__last_resp_pressed = False
-        self.__last_resp_port = 0
-        self.__last_resp_key = 0
-        self.__last_resp_rt = 0
-        self.__first_valid_packet = -1
+        self.__response_structs_queue = []
         self.__using_stim_tracker = False
         # the set lines cmd on RB-series and other XID response
         # devices begins with 'ah'.  If, however, a StimTracker is
@@ -140,44 +136,56 @@ class XidConnection(object):
     def xid_input_found(self):
         input_found = NO_KEY_DETECTED
 
-        if len(self.__response_buffer) >= self.__xid_packet_size:
-            last_byte_index = len(self.__response_buffer) - self.__xid_packet_size
+        position_in_buf = 0
 
-            i = 0
-            while i <= last_byte_index:
-                try:
-                    (k, params, time) = unpack('<cBI',
-                                               self.__response_buffer[
-                                                   last_byte_index:
-                                                   last_byte_index+self.__xid_packet_size])
-                except Exception:
-                    i += 1
-                    continue
+        while (position_in_buf + self.__xid_packet_size) <= len(self.__response_buffer):
 
-                if (k == 'k' and
-                    (params & INVALID_PORT_BITS) == 0 and
-                    self.__response_buffer[i+5] == '\x00'):
+            exception_free = True
 
-                    # found a valid XID packet
-                    self.__first_valid_packet = i
+            try:
+                (k, params, time) = unpack('<cBI',
+                                           self.__response_buffer[
+                                               position_in_buf:
+                                               (position_in_buf + self.__xid_packet_size)])
+            except Exception as exc:
+                exception_free = False
+                print 'Failed to unpack serial bytes in xid_input_found. Err: ' + exc.strerror
 
-                    self.__last_resp_pressed = (
-                        params & KEY_RELEASE_BITMASK) == KEY_RELEASE_BITMASK
-                    self.__last_resp_port = params & 0x0F;
-                    key = ((params & 0xE0) >> 5)
-                    if key == 0:
-                        key = 8
+            # Note: if there is an exception, OR (also) if the xid
+            # packet does not match the expected format (such as: starts with 'k', etc),
+            # then we essentially THROW AWAY the bytes equal to one packet size.
+            # Is there anything else we could do?
+            if exception_free:
+                if (False == (k == 'k' and
+                              (params & INVALID_PORT_BITS) == 0 and
+                              self.__response_buffer[position_in_buf+5] == '\x00')):
+                    print 'Serial bytes were found in the buffer, but they were unparseable.'
+                else:
 
-                    self.__last_resp_key = key
+                    response = {'port': 0,
+                                'pressed': False,
+                                'key': 0,
+                                'time': 0}
 
-                    self.__last_resp_rt = time
+                    response['port'] = params & 0x0F;
+                    response['pressed'] =  (params & KEY_RELEASE_BITMASK) == KEY_RELEASE_BITMASK
+                    response['key'] = ((params & 0xE0) >> 5)
 
-                    if self.__last_resp_pressed:
+                    if response['key'] == 0:
+                        response['key'] = 8
+
+                    response['time'] =  (time if pyxid.use_response_pad_timer  else 0)
+
+                    if response['pressed']:
                         input_found = FOUND_KEY_DOWN
                     else:
                         input_found = FOUND_KEY_UP
 
-                i += 1
+                    self.__response_structs_queue += [response]
+
+            position_in_buf += self.__xid_packet_size
+
+        self.__response_buffer = self.__response_buffer[position_in_buf:]
 
         return input_found
 
@@ -190,21 +198,18 @@ class XidConnection(object):
         Currently 'time' is reported as 0 until clock drift issues are
         resolved.
         """
-        response_time = (self.__last_resp_rt if pyxid.use_response_pad_timer
-                         else 0)
-        response = {'time': response_time,
-                    'pressed': self.__last_resp_pressed,
-                    'key': self.__last_resp_key,
-                    'port': self.__last_resp_port}
+        response = {'port': 0,
+                    'pressed': False,
+                    'key': 0,
+                    'time': 0}
 
-        self.remove_current_response()
+        if len( self.__response_structs_queue ) > 0:
+            # make a copy just in case any other internal members of XidConnection were tracking the structure
+            response = self.__response_structs_queue[0].copy()
+            # we will now hand over 'response' to the calling code, so remove it from the internal queue
+            self.__response_structs_queue.pop(0)
+
         return response
 
-
-    def remove_current_response(self):
-        if self.__first_valid_packet != -1:
-            self.__response_buffer = self.__response_buffer[
-                self.__first_valid_packet + self.__xid_packet_size:]
-            self.__first_valid_packet = -1
 
 
