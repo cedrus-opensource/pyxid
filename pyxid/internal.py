@@ -149,7 +149,7 @@ class XidConnection(object):
                                                (position_in_buf + self.__xid_packet_size)])
             except Exception as exc:
                 exception_free = False
-                print 'Failed to unpack serial bytes in xid_input_found. Err: ' + exc.strerror
+                print 'Failed to unpack serial bytes in xid_input_found. Err: ' + str(exc)
 
             # Note: if there is an exception, OR (also) if the xid
             # packet does not match the expected format (such as: starts with 'k', etc),
