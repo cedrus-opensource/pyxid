@@ -151,15 +151,16 @@ class XidConnection(object):
                 exception_free = False
                 print 'Failed to unpack serial bytes in xid_input_found. Err: ' + str(exc)
 
-            # Note: if there is an exception, OR (also) if the xid
-            # packet does not match the expected format (such as: starts with 'k', etc),
-            # then we essentially THROW AWAY the bytes equal to one packet size.
-            # Is there anything else we could do?
             if exception_free:
                 if (False == (k == 'k' and
                               (params & INVALID_PORT_BITS) == 0 and
                               self.__response_buffer[position_in_buf+5] == '\x00')):
-                    print 'Serial bytes were found in the buffer, but they were unparseable.'
+                    self.__response_buffer = ''
+                    self.flush_input()
+                    self.flush_output()
+                    print 'Pyxid found unparseable bytes in the buffer. Flushing buffer.'
+
+                    break
                 else:
 
                     response = {'port': 0,
@@ -183,6 +184,9 @@ class XidConnection(object):
 
                     self.__response_structs_queue += [response]
 
+            # Note: if an exception was caught, then we essentially
+            # THROW AWAY the bytes equal to one packet size.  Is there
+            # anything else we could do?
             position_in_buf += self.__xid_packet_size
 
         self.__response_buffer = self.__response_buffer[position_in_buf:]
