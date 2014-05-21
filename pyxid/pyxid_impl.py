@@ -52,6 +52,12 @@ class XidScanner(object):
                         con.send_xid_command('c10')
                         con.flush_input()
                         con.flush_output()
+
+                    # be sure to reset the timer to avoid the 4.66 hours problem.
+                    # (refer to XidConnection.xid_input_found to read about the 4.66 hours)
+                    con.send_xid_command('e1')
+                    con.send_xid_command('e5')
+
                 con.close()
 
 
