@@ -72,6 +72,13 @@ This will return the time in the 'time' field of the dict returned by
 XidDevice.get_next_response(), otherwise, the 'time' field will
 contain 0.
 
+IMPORTANT: Even if you choose *not* to enable the optional timer, you
+still *must* call reset_base_timer() and reset_rt_timer() at the
+start of an experiment. This is necessary because pyxid uses the
+fourth and final byte of the keypress timestamp as a boundary, and
+pyxid expects the byte to always be null.  This will succeed as
+long as the timer is reset at least once every 4.66 hours.
+
 Windows Specific Issues
 
 Sometimes, windows fails at detecting XID devices.  Running

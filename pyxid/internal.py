@@ -152,13 +152,39 @@ class XidConnection(object):
                 print 'Failed to unpack serial bytes in xid_input_found. Err: ' + str(exc)
 
             if exception_free:
+
+                """
+                Try to determine if we have a valid packet.  Our options
+                are limited; here is what we look for:
+
+                a.  The first byte must be the letter 'k'
+
+                b.	Bits 0-3 of the second byte indicate the port number.  Lumina
+                and RB-x30 models use only bits 0 and 1; SV-1 uses only bits
+                1 and 2.  We check that the two remaining bits are zero.
+
+                c.	The remaining four bytes provide the reaction time.  Here, we'll
+                assume that the RT will never exceed 4.66 hours :-) and verify
+                that the last byte is set to 0.
+
+                Refer to: http://www.cedrus.com/xid/protocols.htm
+                """
+
+                final_byte = self.__response_buffer[position_in_buf+5]
+
                 if (False == (k == 'k' and
                               (params & INVALID_PORT_BITS) == 0 and
-                              self.__response_buffer[position_in_buf+5] == '\x00')):
+                              final_byte == '\x00')):
                     self.__response_buffer = ''
                     self.flush_input()
                     self.flush_output()
                     print 'Pyxid found unparseable bytes in the buffer. Flushing buffer.'
+
+                    # now see if the ONLY VIOLATION is in the timestamp byte at the end:
+                    if (k == 'k' and (params & INVALID_PORT_BITS) == 0 and final_byte != '\x00'):
+                        timer_msg = 'The Xid device\'s internal RT timer has exceeded 4.66 hours (3 bytes of counting milliseconds).\n'
+                        timer_msg += 'You must send the reset-timer command or power the device off and on again to reset.'
+                        print timer_msg
 
                     break
                 else:
