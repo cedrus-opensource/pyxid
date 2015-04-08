@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from pyxid_impl import *
+from .pyxid_impl import *  # noqa
 
 # Flag for whether or not the response pad timer value should be
 # returned from XidDevice.get_next_response()
@@ -9,6 +9,7 @@ from pyxid_impl import *
 # response pad.  See the README file for reasons you may not want to
 # do this.
 use_response_pad_timer = False
+
 
 def get_xid_devices():
     """
@@ -48,5 +49,4 @@ def test_event_loop(devices):
                 d.poll_for_response()
 
                 if d.response_queue_size() > 0:
-                    print d.device_name, d.get_next_response()
-
+                    print(d.device_name, d.get_next_response())

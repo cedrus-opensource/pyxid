@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from struct import unpack
 import time
-from constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
+from .constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
      KEY_RELEASE_BITMASK, INVALID_PORT_BITS
-import pyxid
+
 
 class XidConnection(object):
     def __init__(self, serial_port, baud_rate=115200):
@@ -11,7 +11,7 @@ class XidConnection(object):
         self.serial_port.baudrate = baud_rate
         self.__needs_interbyte_delay = True
         self.__xid_packet_size = 6
-        self.__response_buffer = ''
+        self.__response_buffer = b''
         self.__response_structs_queue = []
         self.__using_stim_tracker = False
         # the set lines cmd on RB-series and other XID response
@@ -54,7 +54,6 @@ class XidConnection(object):
         self.write(str(self.__set_lines_cmd))
         self.__line_state = local_lines
 
-
     def set_digital_output_lines(self, lines, leave_remaining_lines=False):
         if lines not in range(0, 256):
             raise ValueError('lines must be between 0 and 255')
@@ -73,55 +72,49 @@ class XidConnection(object):
         self.write(str(self.__set_lines_cmd))
         self.__line_state = lines
 
-
     def flush_input(self):
         self.serial_port.flushInput()
 
-
     def flush_output(self):
         self.serial_port.flushOutput()
-
 
     def open(self):
         self.serial_port.open()
         self.flush_input()
         self.flush_output()
 
-
     def close(self):
         self.serial_port.close()
-
 
     def send_xid_command(self, command, bytes_expected=0, timeout=0.1):
         self.write(command)
 
         self.serial_port.timeout = timeout
         response = self.read(bytes_expected)
-        self.serial_port.timeout = 0 # zero means NON-blocking, as in: return IMMEDIATELY. (see pySerial docs)
-
+        # zero means NON-blocking, as in: return IMMEDIATELY.
+        # (see pySerial docs)
+        self.serial_port.timeout = 0
         return response
-
 
     def read(self, bytes_to_read):
         return self.serial_port.read(bytes_to_read)
 
-
     def read_nonblocking(self, bytes_to_read):
-        self.serial_port.timeout = 0 # zero means NON-blocking, as in: return IMMEDIATELY. (see pySerial docs)
+        # zero means NON-blocking, as in: return IMMEDIATELY.
+        # (see pySerial docs)
+        self.serial_port.timeout = 0
         return self.serial_port.read(bytes_to_read)
-
 
     def write(self, command):
         bytes_written = 0
         if self.__needs_interbyte_delay:
             for char in command:
-                bytes_written += self.serial_port.write(char)
+                bytes_written += self.serial_port.write(char.encode('ASCII'))
                 time.sleep(0.001)
         else:
-            bytes_written = self.serial_port.write(command)
+            bytes_written = self.serial_port.write(command.encode('ASCII'))
 
         return bytes_written
-
 
     def check_for_keypress(self):
         response = self.read_nonblocking(self.__xid_packet_size)
@@ -134,11 +127,13 @@ class XidConnection(object):
         return response_found
 
     def xid_input_found(self):
+        from . import use_response_pad_timer
         input_found = NO_KEY_DETECTED
 
         position_in_buf = 0
 
-        while (position_in_buf + self.__xid_packet_size) <= len(self.__response_buffer):
+        while ((position_in_buf + self.__xid_packet_size) <=
+               len(self.__response_buffer)):
 
             exception_free = True
 
@@ -146,10 +141,12 @@ class XidConnection(object):
                 (k, params, time) = unpack('<cBI',
                                            self.__response_buffer[
                                                position_in_buf:
-                                               (position_in_buf + self.__xid_packet_size)])
+                                               (position_in_buf +
+                                                self.__xid_packet_size)])
             except Exception as exc:
                 exception_free = False
-                print 'Failed to unpack serial bytes in xid_input_found. Err: ' + str(exc)
+                print('Failed to unpack serial bytes in xid_input_found. '
+                      'Err: ' + str(exc))
 
             if exception_free:
 
@@ -159,49 +156,52 @@ class XidConnection(object):
 
                 a.  The first byte must be the letter 'k'
 
-                b.	Bits 0-3 of the second byte indicate the port number.  Lumina
-                and RB-x30 models use only bits 0 and 1; SV-1 uses only bits
-                1 and 2.  We check that the two remaining bits are zero.
+                b.	Bits 0-3 of the second byte indicate the port number.
+                Lumina and RB-x30 models use only bits 0 and 1; SV-1 uses
+                only bits 1 and 2.  We check that the two remaining bits are
+                zero.
 
-                c.	The remaining four bytes provide the reaction time.  Here, we'll
-                assume that the RT will never exceed 4.66 hours :-) and verify
-                that the last byte is set to 0.
+                c.	The remaining four bytes provide the reaction time.
+                Here, we'll assume that the RT will never exceed 4.66
+                hours :-) and verify that the last byte is set to 0.
 
                 Refer to: http://www.cedrus.com/xid/protocols.htm
                 """
-
-                final_byte = self.__response_buffer[position_in_buf+5]
-
-                if (False == (k == 'k' and
-                              (params & INVALID_PORT_BITS) == 0 and
-                              final_byte == '\x00')):
-                    self.__response_buffer = ''
+                final_byte = self.__response_buffer[position_in_buf+5:
+                                                    position_in_buf+6]
+                if (k != b'k' or (params & INVALID_PORT_BITS) != 0 or
+                        final_byte != b'\x00'):
+                    self.__response_buffer = b''
                     self.flush_input()
                     self.flush_output()
-                    print 'Pyxid found unparseable bytes in the buffer. Flushing buffer.'
+                    print('Pyxid found unparseable bytes in the buffer. '
+                          'Flushing buffer.')
 
-                    # now see if the ONLY VIOLATION is in the timestamp byte at the end:
-                    if (k == 'k' and (params & INVALID_PORT_BITS) == 0 and final_byte != '\x00'):
-                        timer_msg = 'The Xid device\'s internal RT timer has exceeded 4.66 hours (3 bytes of counting milliseconds).\n'
-                        timer_msg += 'You must send the reset-timer command or power the device off and on again to reset.'
-                        print timer_msg
-
+                    # now see if the ONLY VIOLATION is in the timestamp byte
+                    # at the end:
+                    if (k == 'k' and (params & INVALID_PORT_BITS) == 0 and
+                            final_byte != '\x00'):
+                        timer_msg = ('The Xid device\'s internal RT timer has '
+                                     'exceeded 4.66 hours (3 bytes of counting'
+                                     ' milliseconds).\nYou must send the '
+                                     'reset-timer command or power the device '
+                                     'off and on again to reset.')
+                        print(timer_msg)
                     break
                 else:
-
                     response = {'port': 0,
                                 'pressed': False,
                                 'key': 0,
                                 'time': 0}
-
-                    response['port'] = params & 0x0F;
-                    response['pressed'] =  (params & KEY_RELEASE_BITMASK) == KEY_RELEASE_BITMASK
+                    response['port'] = params & 0x0F
+                    response['pressed'] = (params & KEY_RELEASE_BITMASK) == \
+                        KEY_RELEASE_BITMASK
                     response['key'] = ((params & 0xE0) >> 5)
 
                     if response['key'] == 0:
                         response['key'] = 8
 
-                    response['time'] =  (time if pyxid.use_response_pad_timer  else 0)
+                    response['time'] = time if use_response_pad_timer else 0
 
                     if response['pressed']:
                         input_found = FOUND_KEY_DOWN
@@ -219,7 +219,6 @@ class XidConnection(object):
 
         return input_found
 
-
     def get_current_response(self):
         """
         reads the current response data from the object and returns
@@ -232,14 +231,12 @@ class XidConnection(object):
                     'pressed': False,
                     'key': 0,
                     'time': 0}
-
-        if len( self.__response_structs_queue ) > 0:
-            # make a copy just in case any other internal members of XidConnection were tracking the structure
+        if len(self.__response_structs_queue) > 0:
+            # make a copy just in case any other internal members of
+            # XidConnection were tracking the structure
             response = self.__response_structs_queue[0].copy()
-            # we will now hand over 'response' to the calling code, so remove it from the internal queue
+            # we will now hand over 'response' to the calling code,
+            # so remove it from the internal queue
             self.__response_structs_queue.pop(0)
 
         return response
-
-
-
