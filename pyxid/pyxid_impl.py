@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from serial_wrapper import SerialPort
 from serial.serialutil import SerialException
 from struct import unpack
-from constants import NO_KEY_DETECTED
-from internal import XidConnection
-from keymaps import rb_530_keymap, rb_730_keymap, rb_830_keymap, rb_834_keymap, \
-     lumina_keymap
+
+from .serial_wrapper import SerialPort
+from .constants import NO_KEY_DETECTED
+from .internal import XidConnection
+from .keymaps import (rb_530_keymap, rb_730_keymap, rb_830_keymap,
+                      rb_834_keymap, lumina_keymap)
 
 
 class XidScanner(object):
@@ -16,7 +17,6 @@ class XidScanner(object):
         self.__com_ports = SerialPort.available_ports()
         self.__xid_cons = []
         self.detect_xid_devices()
-
 
     def detect_xid_devices(self):
         """
@@ -29,9 +29,6 @@ class XidScanner(object):
         for c in self.__com_ports:
             device_found = False
             for b in [115200, 19200, 9600, 57600, 38400]:
-                if device_found:
-                    break
-
                 con = XidConnection(c, b)
 
                 try:
@@ -41,7 +38,7 @@ class XidScanner(object):
 
                 con.flush_input()
                 con.flush_output()
-                returnval = con.send_xid_command("_c1", 5)
+                returnval = con.send_xid_command("_c1", 5).decode('ASCII')
 
                 if returnval.startswith('_xid'):
                     device_found = True
@@ -53,13 +50,15 @@ class XidScanner(object):
                         con.flush_input()
                         con.flush_output()
 
-                    # be sure to reset the timer to avoid the 4.66 hours problem.
-                    # (refer to XidConnection.xid_input_found to read about the 4.66 hours)
+                    # be sure to reset the timer to avoid the 4.66 hours
+                    # problem. (refer to XidConnection.xid_input_found to
+                    # read about the 4.66 hours)
                     con.send_xid_command('e1')
                     con.send_xid_command('e5')
 
                 con.close()
-
+                if device_found:
+                    break
 
     def device_at_index(self, index):
         """
@@ -69,7 +68,6 @@ class XidScanner(object):
             raise ValueError("Invalid device index")
 
         return self.__xid_cons[index]
-
 
     def device_count(self):
         """
@@ -89,13 +87,11 @@ class BaseDevice(object):
         """
         self.con.send_xid_command("e5")
 
-
     def reset_base_timer(self):
         """
         Resets the base timer
         """
         self.con.send_xid_command("e1")
-
 
     def query_base_timer(self):
         """
@@ -137,13 +133,11 @@ class ResponseDevice(BaseDevice):
 
             self.response_queue.append(response)
 
-
     def response_queue_size(self):
         """
         Number of responses in the response queue
         """
         return len(self.response_queue)
-
 
     def get_next_response(self):
         """
@@ -157,16 +151,14 @@ class ResponseDevice(BaseDevice):
             key:      The key on the device that was pressed.  This is a
                       0 based index.
             port:     Device port the response came from.  Typically this
-                      is 0 on RB-series devices, and 2 on SV-1 voice key devices.
+                      is 0 on RB-series devices, and 2 on SV-1 voice key
+                      devices.
             time:     For the time being, this just returns 0.  There is
                       currently an issue with clock drift in the Cedrus XID
                       devices.  Once we have this issue resolved, time will
                       report the value of the RT timer in miliseconds.
         """
-        response = self.response_queue[0]
-        self.response_queue = self.response_queue[1:]
-        return response
-
+        return self.response_queue.pop(0)
 
     def clear_response_queue(self):
         """
@@ -174,13 +166,8 @@ class ResponseDevice(BaseDevice):
         """
         self.response_queue = []
 
-
-    def __str__(self):
-        return '<ResponseDevice "%s">' % self.device_name
-
-
     def __repr__(self):
-        return self.__str__()
+        return '<ResponseDevice "%s">' % self.device_name
 
 
 class StimTracker(BaseDevice):
@@ -190,14 +177,14 @@ class StimTracker(BaseDevice):
     The pulse duration defaults to 100ms.  To change this, call
     StimTracker.set_pulse_duration(duration_in_miliseconds)
     """
-    _lines = { 1: 1,
-               2: 2,
-               3: 4,
-               4: 8,
-               5: 16,
-               6: 32,
-               7: 64,
-               8: 128}
+    _lines = {1: 1,
+              2: 2,
+              3: 4,
+              4: 8,
+              5: 16,
+              6: 32,
+              7: 64,
+              8: 128}
 
     def __init__(self, connection, name="StimTracker"):
         BaseDevice.__init__(self, connection, name)
@@ -272,10 +259,9 @@ class StimTracker(BaseDevice):
 
         This will result in lines 1, 4 and 8 being active.
 
-        If you call activate_line(lines=4) with leave_remaining_lines=False (the
-        default), if lines 1 and 8 were previously active, only line 4 will be
-        active after the call.
-
+        If you call activate_line(lines=4) with leave_remaining_lines=False
+        (the default), if lines 1 and 8 were previously active, only line 4
+        will be active after the call.
         """
         if lines is None and bitmask is None:
             raise ValueError('Must set one of lines or bitmask')
@@ -284,7 +270,8 @@ class StimTracker(BaseDevice):
 
         if bitmask is not None:
             if bitmask not in range(0, 256):
-                raise ValueError('bitmask must be an integer between 0 and 255')
+                raise ValueError('bitmask must be an integer between '
+                                 '0 and 255')
 
         if lines is not None:
             if not isinstance(lines, list):
@@ -313,7 +300,8 @@ class StimTracker(BaseDevice):
 
         if bitmask is not None:
             if bitmask not in range(0, 256):
-                raise ValueError('bitmask must be an integer between 0 and 255')
+                raise ValueError('bitmask must be an integer between '
+                                 '0 and 255')
 
         if lines is not None:
             if not isinstance(lines, list):
@@ -338,6 +326,7 @@ class StimTracker(BaseDevice):
 class XidError(Exception):
     pass
 
+
 class XidDevice(object):
     """
     Class for interfacing with a Cedrus XID device.
@@ -360,7 +349,6 @@ class XidDevice(object):
         self.con = xid_connection
         self._impl = None
         self.init_device()
-
 
     def __del__(self):
         self.con.close()
@@ -444,12 +432,8 @@ class XidDevice(object):
     def __getattr__(self, attrname):
         return getattr(self._impl, attrname)
 
-    def __str__(self):
+    def __repr__(self):
         if self._impl is not None:
             return str(self._impl)
         else:
             return 'Uninitialized XID device'
-
-    def __repr__(self):
-        return self.__str__()
-

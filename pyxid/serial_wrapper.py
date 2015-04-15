@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
 from serial import serial_for_url, Serial
 from serial.serialutil import SerialException
-import os, sys
+
 
 class SerialPort(object):
     def __init__(self, serial_port, baud_rate=115200):
         if sys.platform == 'darwin':
             self.impl = MacSerialPort(serial_port, baud_rate)
-        elif sys.platform == 'linux2':
+        elif sys.platform.startswith('linux'):
             self.impl = LinuxSerialPort(serial_port, baud_rate)
         else:
             self.impl = GenericSerialPort(serial_port, baud_rate)
@@ -15,12 +17,11 @@ class SerialPort(object):
     def __getattr__(self, attr):
         return getattr(self.impl, attr)
 
-
     @staticmethod
     def available_ports():
         if sys.platform == 'darwin':
             return MacSerialPort.available_ports()
-        elif sys.platform == 'linux2':
+        elif sys.platform.startswith('linux'):
             return LinuxSerialPort.available_ports()
         else:
             return GenericSerialPort.available_ports()
@@ -36,10 +37,8 @@ class LinuxSerialPort(object):
         self.serial_port = serial_port
         self.serial_port.setBaudrate(baud_rate)
 
-
     def __getattr__(self, attr):
         return getattr(self.serial_port, attr)
-
 
     @staticmethod
     def available_ports():
@@ -78,7 +77,6 @@ class GenericSerialPort(object):
 
         return ports
 
-
     def __getattr__(self, attr):
         """
         forward calls to the internal serial.Serial instance
@@ -99,7 +97,7 @@ class MacSerialPort(object):
     @staticmethod
     def available_ports():
         usb_serial_ports = filter(
-            (lambda x : x.startswith('cu.usbserial')),
+            (lambda x: x.startswith('cu.usbserial')),
             os.listdir('/dev'))
 
         ports = []
@@ -108,11 +106,8 @@ class MacSerialPort(object):
 
         return ports
 
-
     def __getattr__(self, attr):
         """
         forward calls to the internal serial.Serial instance
         """
         return getattr(self.serial_port, attr)
-
-
