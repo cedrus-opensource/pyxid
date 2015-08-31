@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from struct import unpack
-import time
+import sys, time
 from .constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
      KEY_RELEASE_BITMASK, INVALID_PORT_BITS
 
@@ -107,12 +107,20 @@ class XidConnection(object):
 
     def write(self, command):
         bytes_written = 0
+        cmd_bytes = []
+
+        for i in command:
+            if (sys.version_info >= (3, 0)):
+                cmd_bytes += i.encode('latin1')
+            else:
+                cmd_bytes += i
+
         if self.__needs_interbyte_delay:
-            for char in command:
-                bytes_written += self.serial_port.write(char.encode('ASCII'))
+            for char in cmd_bytes:
+                bytes_written += self.serial_port.write([char])
                 time.sleep(0.001)
         else:
-            bytes_written = self.serial_port.write(command.encode('ASCII'))
+            bytes_written = self.serial_port.write(cmd_bytes)
 
         return bytes_written
 
