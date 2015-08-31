@@ -404,7 +404,7 @@ class XidDevice(object):
                     rb_834_keymap)
             else:
                 raise XidError('Unknown RB Device')
-        elif product_id == 'S':
+        elif product_id == b'S':
             fw_major = int(self._send_command('_d4', 1))
             fw_minor = int(self._send_command('_d5', 1))
 
