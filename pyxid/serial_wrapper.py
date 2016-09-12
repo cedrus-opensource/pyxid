@@ -69,7 +69,7 @@ class GenericSerialPort(object):
 
         for i in range(256):
             try:
-                p = Serial(i)
+                p = Serial('COM%d' % i)
                 p.close()
                 ports.append(p)
             except SerialException:

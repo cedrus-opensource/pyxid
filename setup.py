@@ -4,7 +4,7 @@ setup(
     name = "pyxid",
     version = "1.1",
     packages = find_packages(),
-    install_requires = ["pyserial>=2.5"],
+    install_requires = ["pyserial>=3.1"],
     author = "Grant Limberg",
     author_email = "developers@cedrus.com",
     maintainer = "Cedrus Corporation",
