@@ -408,17 +408,7 @@ class XidDevice(object):
             self._impl = StimTracker(
                 self.con,
                 'Cedrus C-POD')
-
         elif product_id == b'S':
-            fw_major = int(self._send_command('_d4', 1))
-            fw_minor = int(self._send_command('_d5', 1))
-
-            if fw_major == 0 and fw_minor < 5:
-                raise XidError('Invalid Firmware Version.  You must upgrade '
-                               'your device to firmware release SC05. '
-                               'Currently installed version: SC%d%d' % (
-                                   fw_major, fw_minor))
-
             self._impl = StimTracker(
                 self.con,
                 'Cedrus StimTracker')
