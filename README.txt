@@ -1,7 +1,7 @@
 Python library for interfacing with Cedrus XID and StimTracker devices
 
 XID (eXperiment Interface Device) devices are used in software such as
-SuperLab, Presentation, and ePrime for receiving input as part of
+SuperLab, Presentation, PsychoPy, and ePrime for receiving input as part of
 stimulus/response testing experiments.
 
 This handles all of the low level device handling for XID devices in
@@ -46,7 +46,7 @@ See the docstring for activate_line() for documentation on how to use it.
 
 These methods are not available if the device is a response pad.
 
-StimTracker is used in software such as SuperLab, Presentation and ePrime
+StimTracker is used in software such as SuperLab, Presentation, PsychoPy, and ePrime
 for sending event markers.
 
 
