@@ -1,22 +1,27 @@
 from setuptools import setup, find_packages
 
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.txt'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
-    name = "pyxid",
-    version = "1.1",
+    name = "pyxid2",
+    version = "1.0",
     packages = find_packages(),
-    install_requires = ["pyserial>=3.1"],
-    author = "Grant Limberg",
+    install_requires = ["ftd2xx>=1.1.0"],
+    author = "Eugene Matsak",
     author_email = "developers@cedrus.com",
     maintainer = "Cedrus Corporation",
-    maintainer_email = "opensource@cedrus.com",
-    description = ("Pure python library for communicating with Cedrus XID "
-                   "and StimTracker devices."),
-    long_description = open('README.txt').read(),
+    maintainer_email = "developers@cedrus.com",
+    description = ("Python library for interfacing with Cedrus XID devices, e.g. StimTracker, RB-x40, c-pod, and Lumina."),
+    long_description = long_description,
+    long_description_content_type='text/markdown',
     license = "BSD",
     keywords = "cedrus xid XID stimulus response data collection",
     url = "http://www.github.com/cedrus-opensource/pyxid/",
     classifiers = [
-        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Topic :: System :: Hardware",

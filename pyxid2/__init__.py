@@ -2,15 +2,6 @@
 
 from .pyxid_impl import *  # noqa
 
-# Flag for whether or not the response pad timer value should be
-# returned from XidDevice.get_next_response()
-#
-# Set this to true if you want to return the time reported by the
-# response pad.  See the README file for reasons you may not want to
-# do this.
-use_response_pad_timer = False
-
-
 def get_xid_devices():
     """
     Returns a list of all Xid devices connected to your computer.
@@ -21,6 +12,10 @@ def get_xid_devices():
         com = scanner.device_at_index(i)
         com.open()
         device = XidDevice(com)
+
+        device.reset_base_timer()
+        device.reset_rt_timer()
+
         devices.append(device)
     return devices
 
