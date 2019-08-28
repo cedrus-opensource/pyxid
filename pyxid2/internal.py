@@ -4,7 +4,17 @@ import sys, time
 from .constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
      KEY_RELEASE_BITMASK, INVALID_PORT_BITS
 
-import ftd2xx
+try:
+    import ftd2xx
+except OSError as e:
+    if 'image not found' in str(e):
+        raise OSError('ftd2xx drivers are not installed (or not in expected location)'
+                      ' and these are required for the Cedrus pyxid2 library.\n'
+                      '** Download from https://www.ftdichip.com/Drivers/D2XX.htm **')
+    else:
+        raise(e)  # not an error we know so pass it on
+
+
 
 class XidConnection(object):
     def __init__(self, device, baud_rate=115200):
