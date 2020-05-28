@@ -9,7 +9,11 @@ print(dev)
 dev.reset_base_timer()
 dev.reset_rt_timer()
 
+#dev._send_command('iuA1', 0)
+#dev.enable_usb_output('K', True)
+
 if dev.is_response_device():
+    print ("Press a key!")
     while not dev.has_response():
         dev.poll_for_response()
 

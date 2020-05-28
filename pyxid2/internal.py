@@ -2,7 +2,7 @@
 from struct import unpack
 import sys, time
 from .constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
-     KEY_RELEASE_BITMASK, INVALID_PORT_BITS
+     KEY_RELEASE_BITMASK, INVALID_PORT_BITS, XID_PACKET_SIZE, ST2_PACKET_SIZE
 
 import ftd2xx
 
@@ -12,7 +12,7 @@ class XidConnection(object):
         self.ftd2xx_con = 0
         self.baudrate = baud_rate
         self.__needs_interbyte_delay = True
-        self.__xid_packet_size = 6
+        self.__packet_size = XID_PACKET_SIZE
         self.__response_buffer = b''
         self.__response_structs_queue = []
         # The set lines cmd on XID 1 response devices (RB-x30 series, Lumina LP-400 and SV-1)'ah'.
@@ -21,7 +21,7 @@ class XidConnection(object):
         self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
         self.__line_state = 0
 
-    def set_using_stim_tracker(self, using_st=True):
+    def set_using_stim_tracker_output(self, using_st=True):
         if using_st:
             self.__using_stim_tracker = True
             self.__set_lines_cmd = 'mh'+chr(0)+chr(0)
@@ -30,6 +30,10 @@ class XidConnection(object):
             self.__using_stim_tracker = False
             self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
             self.__needs_interbyte_delay = True
+
+    def set_resp_packet_size(self, st2_packet_size=True):
+        if st2_packet_size:
+            self.__packet_size = ST2_PACKET_SIZE # ST2 packets are larger
 
     def clear_digital_output_lines(self, lines, leave_remaining_lines=False):
         if lines not in list(range(0, 65536)):
@@ -112,12 +116,15 @@ class XidConnection(object):
 
     def check_for_keypress(self):
         self.ftd2xx_con.setTimeouts(2, 50)
-        response = self.read(self.__xid_packet_size)
+        response = self.read(self.__packet_size)
 
         response_found = NO_KEY_DETECTED
         if len(response) > 0:
             self.__response_buffer += response
-            response_found = self.xid_input_found()
+            if self.__packet_size == 6:
+                response_found = self.xid_input_found()
+            else:
+                response_found = self.st2_input_found()
 
         return response_found
 
@@ -126,7 +133,7 @@ class XidConnection(object):
 
         position_in_buf = 0
 
-        while ((position_in_buf + self.__xid_packet_size) <=
+        while ((position_in_buf + self.__packet_size) <=
                len(self.__response_buffer)):
 
             exception_free = True
@@ -136,26 +143,16 @@ class XidConnection(object):
                                            self.__response_buffer[
                                                position_in_buf:
                                                (position_in_buf +
-                                                self.__xid_packet_size)])
+                                                self.__packet_size)])
             except Exception as exc:
                 exception_free = False
                 print(('Failed to unpack serial bytes in xid_input_found. '
                       'Err: ' + str(exc)))
 
             if exception_free:
-
                 """
-                Try to determine if we have a valid packet.  Our options
-                are limited; here is what we look for:
-
-                a.  The first byte must be the letter 'k'
-
-                b.	Bits 0-3 of the second byte indicate the port number.
-                Lumina and RB-x30 models use only bits 0 and 1; SV-1 uses
-                only bits 1 and 2.  We check that the two remaining bits are
-                zero.
-
-                Refer to: http://www.cedrus.com/xid/protocols.htm
+                Refer to PROTOCOL AND TIMING COMMANDS section of
+                https://cedrus.com/support/xid/commands.htm
                 """
                 if (k != b'k' or (params & INVALID_PORT_BITS) != 0):
                     self.__response_buffer = b''
@@ -166,13 +163,13 @@ class XidConnection(object):
                     break
                 else:
                     response = {'port': 0,
-                                'pressed': False,
                                 'key': 0,
+                                'pressed': False,
                                 'time': 0}
                     response['port'] = params & 0x0F
+                    response['key'] = ((params & 0xE0) >> 5)
                     response['pressed'] = (params & KEY_RELEASE_BITMASK) == \
                         KEY_RELEASE_BITMASK
-                    response['key'] = ((params & 0xE0) >> 5)
 
                     if response['key'] == 0:
                         response['key'] = 8
@@ -186,10 +183,67 @@ class XidConnection(object):
 
                     self.__response_structs_queue += [response]
 
-            # Note: if an exception was caught, then we essentially
-            # THROW AWAY the bytes equal to one packet size.  Is there
-            # anything else we could do?
-            position_in_buf += self.__xid_packet_size
+            position_in_buf += self.__packet_size
+
+        self.__response_buffer = self.__response_buffer[position_in_buf:]
+
+        return input_found
+
+    def st2_input_found(self):
+        input_found = NO_KEY_DETECTED
+
+        position_in_buf = 0
+
+        while ((position_in_buf + self.__packet_size) <=
+               len(self.__response_buffer)):
+
+            exception_free = True
+
+            try:
+                (o, port, key, pressed, time, null_byte) = unpack('<ccBcIB',
+                                           self.__response_buffer[
+                                               position_in_buf:
+                                               (position_in_buf +
+                                                self.__packet_size)])
+            except Exception as exc:
+                exception_free = False
+                print(('Failed to unpack serial bytes in st2_input_found. '
+                      'Err: ' + str(exc)))
+
+            if exception_free:
+                """
+                Refer to PROTOCOL AND TIMING COMMANDS section of
+                https://cedrus.com/support/xid/commands.htm
+                """
+                if (o != b'o' or null_byte != 0):
+                    self.__response_buffer = b''
+                    self.flush()
+                    print('Pyxid found unparseable bytes in the buffer. '
+                          'Flushing buffer.')
+
+                    break
+                else:
+                    response = {'port': 0,
+                                'key': 0,
+                                'pressed': False,
+                                'time': 0}
+                    response['port'] = port
+                    response['key'] = key
+                    response['pressed'] = True if pressed == b'1' else False
+
+                    if response['key'] == 0:
+                        response['key'] = 8
+
+                    response['time'] = time
+
+                    if response['pressed']:
+                        input_found = FOUND_KEY_DOWN
+                    else:
+                        input_found = FOUND_KEY_UP
+
+                    self.__response_structs_queue += [response]
+
+            position_in_buf += self.__packet_size
 
         self.__response_buffer = self.__response_buffer[position_in_buf:]
 

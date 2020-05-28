@@ -101,7 +101,8 @@ class XidDevice(object):
         
         self.init_device()
 
-        self.con.set_using_stim_tracker(self.major_fw_version == 2 or self.product_id == b'S')
+        self.con.set_using_stim_tracker_output(self.major_fw_version == 2 or self.product_id == b'S')
+        self.con.set_resp_packet_size(self.major_fw_version == 2 and self.product_id == b'S')
         if self.major_fw_version == 1:
             self.con.send_xid_command('a10')
         self.con.clear_digital_output_lines(0xff)
@@ -134,7 +135,12 @@ class XidDevice(object):
         return time
 
     def is_response_device(self):
-        return self.product_id != b'S' and self.product_id != b'4'
+        """
+        "Response device" is used loosely here. Second generation StimTrackers are not response
+        devices in a strict sense, they are capable of reporting keypresses via USB.
+        The only devices you will never get a keypress from are first gen StimTrackers and c-pods.
+        """
+        return not (self.product_id == b'S' and self.major_fw_version != 2) and self.product_id != b'4'
 
     def init_device(self):
         """
@@ -366,6 +372,13 @@ class XidDevice(object):
                 bitmask |= 2 ** (l-1)
 
         self.con.clear_digital_output_lines(bitmask, leave_remaining_lines)
+
+    def enable_usb_output(self, selector, enable):
+        if self.major_fw_version < 2:
+            return
+
+        command = 'iu%s%s' % (selector, '1' if enable is True else '0')
+        self.con.send_xid_command(command, 0)
 
     def __getattr__(self, attrname):
         return getattr(self._impl, attrname)

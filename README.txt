@@ -5,18 +5,30 @@ XID (eXperiment Interface Device) devices are used with software such as SuperLa
 This handles all of the low level device handling for XID devices in python projects. The developer using this library must poll the attached device(s) for responses. 
 Here's an example of how to do so, followed by an example of how to send a series of TTL signals:
 
-    import pyxid
+    import pyxid2
     import time
 
     # get a list of all attached XID devices
-    devices = pyxid.get_xid_devices()
+    devices = pyxid2.get_xid_devices()
 
     dev = devices[0] # get the first device to use
     print(dev)
     dev.reset_base_timer()
     dev.reset_rt_timer()
 
+    # If you're trying to collect responses from a StimTracker Duo/Quad,
+    # you'll have to enable USB output for the appropriate response type.
+    # You can read about it here https://cedrus.com/support/xid/commands.htm
+    # in the SIGNAL FILTERING & FLOW section.
+    #dev.enable_usb_output('K', True)
+
+    # Note that not all XID commands are implemented in this library. You
+    # can send any arbitrary string to the XID device if you need one of the
+    # unimplemented commands, like so (second arg is return bytes expected):
+    #dev._send_command('iuK1', 0)
+
     if dev.is_response_device():
+        print ("Press a key!")
         while not dev.has_response():
             dev.poll_for_response()
 
@@ -37,11 +49,10 @@ Here's an example of how to do so, followed by an example of how to send a serie
 
 The response is a python dict with the following keys:
 
-    pressed: True if the key was pressed, False if it was released
-    key: Response pad key pressed by the subject
     port: Device port the response was from (typically 0)
-    time: value of the Response Time timer when the key was hit/released
-
+    key: Response pad key pressed by the subject
+    pressed: True if the key was pressed, False if it was released
+    time: value of the Response Time timer when the key was pressed/released
 
 Sending a TTL pulse signal via the library can be done via the following methods:
 
