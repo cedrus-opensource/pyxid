@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from serial.serialutil import SerialException
+from struct import pack
 from struct import unpack
 
 from .constants import NO_KEY_DETECTED
@@ -344,6 +344,11 @@ class XidDevice(object):
 
         self.con.set_digital_output_lines(bitmask, leave_remaining_lines)
 
+    # A more straightforward function for raising lines. You tell it the mask you want to see
+    # and it sets it.
+    def set_lines(self, lines):
+        self.con.set_digio_lines_to_mask(lines)
+
     def clear_line(self, lines=None, bitmask=None, leave_remaining_lines=False):
         """
         The inverse of activate_line.  If a line is active, it deactivates it.
@@ -379,6 +384,46 @@ class XidDevice(object):
 
         command = 'iu%s%s' % (selector, '1' if enable is True else '0')
         self.con.send_xid_command(command, 0)
+
+    def get_pulse_table_bitmask(self):
+        lines = 0
+        if self.major_fw_version > 1:
+            (_, _, _, lines) = unpack('<cccH', self.con.send_xid_command("_mk", 5))
+
+        return lines
+
+    def set_pulse_table_bitmask(self, mask):
+        ptable_mask = pack('<ccH', b'm', b'k', mask)
+        if self.major_fw_version > 1:
+            self.con.send_xid_byte_command(ptable_mask)
+
+    def clear_pulse_table(self):
+        if self.major_fw_version > 1:
+            self.con.send_xid_command("mc")
+
+    def is_pulse_table_running(self):
+        running = -1
+        if self.major_fw_version > 1:
+            (_, _, _, running) = unpack('<cccc', self.con.send_xid_command("_mr", 4))
+
+        return running == b'1'
+
+    def run_pulse_table(self):
+        if self.major_fw_version > 1:
+            self.con.send_xid_command("mr")
+
+    def stop_pulse_table(self):
+        if self.major_fw_version > 1:
+            self.con.send_xid_command("ms")
+
+    def add_pulse_table_entry(self, time, mask):
+        ptable_mask = pack('<ccIH', b'm', b't', time, mask)
+        if self.major_fw_version > 1:
+            self.con.send_xid_byte_command(ptable_mask)
+
+    def reset_output_lines(self):
+        if self.major_fw_version > 1:
+            self.con.send_xid_command("mz")
 
     def __getattr__(self, attrname):
         return getattr(self._impl, attrname)

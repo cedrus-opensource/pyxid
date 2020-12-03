@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from struct import pack
 from struct import unpack
 import sys, time
 from .constants import NO_KEY_DETECTED, FOUND_KEY_DOWN, FOUND_KEY_UP, \
@@ -73,6 +74,12 @@ class XidConnection(object):
         self.write(self.__set_lines_cmd)
         self.__line_state = lines
 
+    def set_digio_lines_to_mask(self, lines):
+        command_char = b'm' if self.__using_stim_tracker else b'a'
+
+        digio_cmd = pack('<ccH', command_char, b'h', lines)
+        self.write_bytes(digio_cmd)
+
     def flush(self):
         self.ftd2xx_con.purge()
 
@@ -92,6 +99,13 @@ class XidConnection(object):
 
     def send_xid_command(self, command, bytes_expected=0):
         self.write(command)
+
+        response = self.read(bytes_expected)
+
+        return response
+
+    def send_xid_byte_command(self, command, bytes_expected=0):
+        self.write_bytes(command)
 
         response = self.read(bytes_expected)
 
@@ -121,6 +135,20 @@ class XidConnection(object):
                 time.sleep(0.001)
         else:
             bytes_written = self.ftd2xx_con.write(bytes(cmd_bytes))
+
+        return bytes_written
+
+    def write_bytes(self, command):
+        bytes_written = 0
+
+        self.ftd2xx_con.setTimeouts(50, 50)
+
+        if self.__needs_interbyte_delay:
+            for char in command:
+                bytes_written += self.ftd2xx_con.write(char)
+                time.sleep(0.001)
+        else:
+            bytes_written = self.ftd2xx_con.write(command)
 
         return bytes_written
 
