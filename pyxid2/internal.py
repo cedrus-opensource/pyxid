@@ -84,7 +84,10 @@ class XidConnection(object):
         self.ftd2xx_con.purge()
 
     def open(self):
-        self.ftd2xx_con = ftd2xx.openEx(self.ftd2xx_intermediate)
+        try:
+            self.ftd2xx_con = ftd2xx.openEx(self.ftd2xx_intermediate)
+        except ftd2xx.DeviceError:
+            return False
 
         self.ftd2xx_con.setBaudRate(self.baudrate)
         self.ftd2xx_con.setDataCharacteristics(8, 0, 0)
@@ -93,6 +96,8 @@ class XidConnection(object):
         self.ftd2xx_con.setUSBParameters(64,64)
         self.ftd2xx_con.setLatencyTimer(10)
         self.flush()
+
+        return True
 
     def close(self):
         self.ftd2xx_con.close()

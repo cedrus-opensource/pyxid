@@ -35,26 +35,31 @@ class XidScanner(object):
             for b in [115200, 19200, 9600, 57600, 38400]:
                 con = XidConnection(d, b)
 
-                try:
-                    con.open()
-                except ftd2xx.DeviceError:
+                if con.open():
+                    con.flush()
+                
+                    try:
+                        returnval = con.send_xid_command("_c1", 5).decode('ASCII')
+                    except UnicodeDecodeError as e:
+                        # Assume this isn't an XID device, since it returned something weird.
+                        con.close()
+                        break
+
+                    if returnval.startswith('_xid'):
+                        device_found = True
+                        self.__xid_cons.append(con)
+
+                        if(returnval != '_xid0'):
+                            # set the device into XID mode
+                            con.send_xid_command('c10')
+                            con.flush()
+
+                    con.close()
+                    if device_found:
+                        # Device found, we're done.
+                        break
+                else:
                     continue
-
-                con.flush()
-                returnval = con.send_xid_command("_c1", 5).decode('ASCII')
-
-                if returnval.startswith('_xid'):
-                    device_found = True
-                    self.__xid_cons.append(con)
-
-                    if(returnval != '_xid0'):
-                        # set the device into XID mode
-                        con.send_xid_command('c10')
-                        con.flush()
-
-                con.close()
-                if device_found:
-                    break
 
     def device_at_index(self, index):
         """
@@ -176,7 +181,7 @@ class XidDevice(object):
             if self.major_fw_version < 2:
                 self.device_name = 'Cedrus StimTracker'
             else:
-                self.device_name = 'Cedrus StimTracker Duo' if self.model_id == 1 else 'Cedrus StimTracker Quad'
+                self.device_name = 'Cedrus StimTracker Duo' if self.model_id == b'1' else 'Cedrus StimTracker Quad'
 
         elif self.product_id == -99:
             raise XidError('Invalid XID device')

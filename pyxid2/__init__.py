@@ -10,13 +10,15 @@ def get_xid_devices():
     scanner = XidScanner()
     for i in range(scanner.device_count()):
         com = scanner.device_at_index(i)
-        com.open()
-        device = XidDevice(com)
+        if com.open():
+            device = XidDevice(com)
 
-        device.reset_base_timer()
-        device.reset_rt_timer()
+            device.reset_base_timer()
+            device.reset_rt_timer()
 
-        devices.append(device)
+            devices.append(device)
+        else:
+            continue
     return devices
 
 
