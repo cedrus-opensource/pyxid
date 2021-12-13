@@ -33,7 +33,11 @@ Here's an example of how to do so, followed by an example of how to send a serie
             dev.poll_for_response()
 
         response = dev.get_next_response()
-        print(response)
+        # You can filter out key releases by simply ignoring them
+        if response['pressed'] == True:
+            # Process response as desired
+            print(response)
+
         dev.clear_response_queue()
 
     dev.set_pulse_duration(300)

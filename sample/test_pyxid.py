@@ -9,8 +9,16 @@ print(dev)
 dev.reset_base_timer()
 dev.reset_rt_timer()
 
-#dev._send_command('iuA1', 0)
+# If you're trying to collect responses from a StimTracker Duo/Quad,
+# you'll have to enable USB output for the appropriate response type.
+# You can read about it here https://cedrus.com/support/xid/commands.htm
+# in the SIGNAL FILTERING & FLOW section.
 #dev.enable_usb_output('K', True)
+
+# Note that not all XID commands are implemented in this library. You
+# can send any arbitrary string to the XID device if you need one of the
+# unimplemented commands, like so (second arg is return bytes expected):
+#dev._send_command('iuK1', 0)
 
 if dev.is_response_device():
     print ("Press a key!")
@@ -18,7 +26,11 @@ if dev.is_response_device():
         dev.poll_for_response()
 
     response = dev.get_next_response()
-    print(response)
+    # You can filter out key releases by simply ignoring them
+    if response['pressed'] == True:
+        # Process response as desired
+        print(response)
+
     dev.clear_response_queue()
 
 dev.set_pulse_duration(300)
