@@ -80,8 +80,8 @@ class XidConnection(object):
         digio_cmd = pack('<ccH', command_char, b'h', lines)
         self.write_bytes(digio_cmd)
 
-    def flush(self):
-        self.ftd2xx_con.purge()
+    def flush(self, mask=0):
+        self.ftd2xx_con.purge(mask)
 
     def open(self):
         try:

@@ -260,6 +260,11 @@ class XidDevice(object):
         """
         self.response_queue = []
 
+    # Will flush both input and output buffers by default.
+    # 1 is output (from device) only, 2 is input (to device) only
+    def flush_serial_buffer(self, mask=0):
+        self.con.flush(mask)
+
     def set_pulse_duration(self, duration):
         """
         Sets the pulse duration for events in miliseconds when activate_line
