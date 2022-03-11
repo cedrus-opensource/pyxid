@@ -249,7 +249,10 @@ class XidDevice(object):
                       devices.  Once we have this issue resolved, time will
                       report the value of the RT timer in miliseconds.
         """
-        return self.response_queue.pop(0)
+        response = None
+        if self.has_response():
+            response = self.response_queue.pop(0)
+        return response
 
     def clear_response_queue(self):
         """
