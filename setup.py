@@ -8,7 +8,7 @@ with open(path.join(this_directory, 'README.txt'), encoding='utf-8') as f:
 
 setup(
     name = "pyxid2",
-    version = "1.0.3",
+    version = "1.0.4",
     packages = find_packages(),
     install_requires = ["ftd2xx>=1.1.2"],
     author = "Eugene Matsak",
