@@ -31,6 +31,7 @@ if dev.is_response_device():
         # Process response as desired
         print(response)
 
+    dev.flush_serial_buffer()
     dev.clear_response_queue()
 
 dev.set_pulse_duration(300)

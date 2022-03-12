@@ -38,6 +38,7 @@ Here's an example of how to do so, followed by an example of how to send a serie
             # Process response as desired
             print(response)
 
+        dev.flush_serial_buffer()
         dev.clear_response_queue()
 
     dev.set_pulse_duration(300)
@@ -65,6 +66,10 @@ Sending a TTL pulse signal via the library can be done via the following methods
     clear_line()
 
 See the docstring for activate_line() for documentation on how to use it.
+
+Response collection in pyxid
+
+When a physical key is pressed on the device, a set of bytes describing it go into the serial buffer. This also occurs when the physical key is released. Calling poll_for_response(), makes pyxid check the serial buffer for bytes constituting a response packet, and put a response object in its internal response queue. It does so once per poll_for_response() call. Calling get_next_response() pops a single response from the response queue. If you want to avoid seeing more responses than necessary, you can use flush_serial_buffer() to prevent more responses from being added to the queue by poll_for_response(), and you can clear already processed responses with clear_response_queue().
 
 
 Timers
