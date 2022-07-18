@@ -1,3 +1,9 @@
+'''
+This is a short sample of the Pulse Table feature of XID. Under the vast majority
+of circumstances it's not necessary, and users are better served sending separate
+event markers (see event_markers.py).
+'''
+
 import pyxid2
 import time
 

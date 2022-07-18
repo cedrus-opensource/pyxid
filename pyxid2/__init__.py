@@ -13,8 +13,7 @@ def get_xid_devices():
         if com.open():
             device = XidDevice(com)
 
-            device.reset_base_timer()
-            device.reset_rt_timer()
+            device.reset_timer()
 
             devices.append(device)
         else:
@@ -37,8 +36,7 @@ def get_xid_device(device_number):
 
 def test_event_loop(devices):
     for d in devices:
-        d.reset_base_timer()
-        d.reset_rt_timer()
+        d.reset_timer()
 
     while True:
         for d in devices:

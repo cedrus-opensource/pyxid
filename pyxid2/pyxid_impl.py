@@ -82,18 +82,6 @@ class XidError(Exception):
 
 
 class XidDevice(object):
-    """
-    Class for interfacing with a Cedrus XID device.
-
-    At the beginning of an experiment, the developer should call:
-
-        XidDevice.reset_base_timer()
-
-    Whenever a stimulus is presented, the developer should call:
-
-        XidDevice.reset_rt_timer()
-    """
-
     def __init__(self, xid_connection):
         self.con = xid_connection
         self._impl = None
@@ -116,28 +104,46 @@ class XidDevice(object):
         self.con.close()
         del self.con
 
-    def reset_rt_timer(self):
+    def reset_timer(self):
         """
-        Resets the Reaction Time timer.
+        Resets the timer.
         """
         self.con.send_xid_command("e5")
 
-    def reset_base_timer(self):
+    def query_timer(self):
         """
-        Resets the base timer
-        """
-        if self.major_fw_version < 2:
-            self.con.send_xid_command("e1")
-
-    def query_base_timer(self):
-        """
-        gets the value from the device's base timer
+        Gets the value from the device's timer
         """
         time = -1
         if self.major_fw_version < 2:
-            (_, _, time) = unpack('<ccI', self.con.send_xid_command("e3", 6))
+            # There is no command equivalent to '_e5' in XID1. The response timer can be
+            # reset but not queried (it's only used for timestamping responses). If you
+            # absolutely must refer to the device's timer, you can send 'e1' for reset 
+            # and 'e3' for query (returns e3 followed by 4 bytes of timestamp)
+            time = 0
+        else:
+            (_, _, _, time) = unpack('<cccI', self.con.send_xid_command("_e5", 7))
         
         return time
+
+    '''
+    The following three timer-related functions were deprecated in pyxid2
+    version 1.0.5 to reflect the long-standing changes in the XID protocol
+    for XID2 devices. There is only one internal timer that both provides
+    the timestamps for responses and can be queried independently with '_e5'
+    and reset with 'e5'.
+    '''
+    def reset_rt_timer(self):
+        print ("reset_rt_timer() was deprecated in version 1.0.5. Please use reset_timer() instead.")
+        self.reset_timer()
+
+    def reset_base_timer(self):
+        print ("reset_base_timer() was deprecated in version 1.0.5. Please use reset_timer() instead.")
+        self.reset_timer()
+
+    def query_base_timer(self):
+        print ("query_base_timer() was deprecated in version 1.0.5. Please use query_timer() instead.")
+        return self.query_timer()
 
     def is_response_device(self):
         """
@@ -357,11 +363,6 @@ class XidDevice(object):
 
         self.con.set_digital_output_lines(bitmask, leave_remaining_lines)
 
-    # A more straightforward function for raising lines. You tell it the mask you want to see
-    # and it sets it.
-    def set_lines(self, lines):
-        self.con.set_digio_lines_to_mask(lines)
-
     def clear_line(self, lines=None, bitmask=None, leave_remaining_lines=False):
         """
         The inverse of activate_line.  If a line is active, it deactivates it.
@@ -390,6 +391,12 @@ class XidDevice(object):
                 bitmask |= 2 ** (l-1)
 
         self.con.clear_digital_output_lines(bitmask, leave_remaining_lines)
+
+    def set_lines(self, lines):
+        self.con.set_digio_lines_to_mask(lines)
+
+    def clear_all_lines(self):
+        self.con.set_digio_lines_to_mask(0)
 
     def enable_usb_output(self, selector, enable):
         if self.major_fw_version < 2:
