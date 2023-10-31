@@ -180,9 +180,24 @@ class XidDevice(object):
                 self.device_name = 'Cedrus RB-844' if self.major_fw_version == 2 else 'Cedrus RB-834'
                 self.keymap = rb_834_keymap
             else:
-                raise XidError('Unknown RB Device')
+                raise XidError('Unknown RB Model')
         elif self.product_id == b'4':
             self.device_name = 'Cedrus C-POD'
+        elif self.product_id == b'5':
+            if self.model_id == b'1':
+                self.device_name = 'Riponda Model C'
+                self.keymap = rb_530_keymap
+            elif self.model_id == b'2':
+                self.device_name = 'Riponda Model L'
+                self.keymap = rb_730_keymap
+            elif self.model_id == b'3':
+                self.device_name = 'Riponda Model E'
+                self.keymap = rb_830_keymap
+            elif self.model_id == b'4':
+                self.device_name = 'Riponda Model S'
+                self.keymap = rb_834_keymap
+            else:
+                raise XidError('Unknown Riponda Model')
         elif self.product_id == b'S':
             if self.major_fw_version < 2:
                 self.device_name = 'Cedrus StimTracker'

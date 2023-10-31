@@ -8,14 +8,14 @@ with open(path.join(this_directory, 'README.txt'), encoding='utf-8') as f:
 
 setup(
     name = "pyxid2",
-    version = "1.0.5",
+    version = "1.0.6",
     packages = find_packages(),
     install_requires = ["ftd2xx>=1.3.1"],
     author = "Eugene Matsak",
     author_email = "developers@cedrus.com",
     maintainer = "Cedrus Corporation",
     maintainer_email = "developers@cedrus.com",
-    description = ("Python library for interfacing with Cedrus XID devices, e.g. StimTracker, RB-x40, c-pod, and Lumina."),
+    description = ("Python library for interfacing with Cedrus XID devices, e.g. StimTracker, Riponda, RB-x40, c-pod, and Lumina."),
     long_description = long_description,
     long_description_content_type='text/markdown',
     license = "BSD",
