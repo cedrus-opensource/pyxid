@@ -18,8 +18,8 @@ except OSError as e:
 
 
 class XidConnection(object):
-    def __init__(self, device, baud_rate=115200):
-        self.ftd2xx_intermediate = device
+    def __init__(self, ftd2xx_index, baud_rate):
+        self.ftd2xx_index = ftd2xx_index
         self.ftd2xx_con = 0
         self.baudrate = baud_rate
         self.__needs_interbyte_delay = True
@@ -84,23 +84,32 @@ class XidConnection(object):
         self.ftd2xx_con.purge(mask)
 
     def open(self):
-        try:
-            self.ftd2xx_con = ftd2xx.openEx(self.ftd2xx_intermediate)
-        except ftd2xx.DeviceError:
-            return False
+        for attempt in range(5):
+            try:
+                self.ftd2xx_con = ftd2xx.open(self.ftd2xx_index)
+            except ftd2xx.DeviceError:
+                time.sleep(0.005)
+            else:
+                self.ftd2xx_con.setBaudRate(self.baudrate)
+                self.ftd2xx_con.setDataCharacteristics(8, 0, 0)
 
-        self.ftd2xx_con.setBaudRate(self.baudrate)
-        self.ftd2xx_con.setDataCharacteristics(8, 0, 0)
+                self.ftd2xx_con.setTimeouts(50, 50)
+                self.ftd2xx_con.setUSBParameters(64,64)
+                self.ftd2xx_con.setLatencyTimer(10)
+                self.flush()
 
-        self.ftd2xx_con.setTimeouts(50, 50)
-        self.ftd2xx_con.setUSBParameters(64,64)
-        self.ftd2xx_con.setLatencyTimer(10)
-        self.flush()
+                return True
 
-        return True
+        return False
 
     def close(self):
-        self.ftd2xx_con.close()
+        try:
+            if self.ftd2xx_con != 0:
+                self.ftd2xx_con.close()
+        except ftd2xx.DeviceError:
+            return False
+        else:
+            return True
 
     def send_xid_command(self, command, bytes_expected=0):
         self.write(command)

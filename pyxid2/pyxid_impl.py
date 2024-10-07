@@ -15,7 +15,6 @@ class XidScanner(object):
     """
     def __init__(self):
         self.__xid_cons = []
-        self.detect_xid_devices()
 
     def detect_xid_devices(self):
         """
@@ -23,17 +22,17 @@ class XidScanner(object):
         XID command '_c1'.  If the device response with '_xid', it is
         an xid device.
         """
+        for con in self.__xid_cons:
+            con.close()
+
         self.__xid_cons = []
 
-        devs = ftd2xx.listDevices()
+        ftd_dev_num = ftd2xx.createDeviceInfoList()
 
-        if devs is None:
-            return
-
-        for d in devs:
+        for i in range (0, ftd_dev_num):
             device_found = False
             for b in [115200, 19200, 9600, 57600, 38400]:
-                con = XidConnection(d, b)
+                con = XidConnection(i, b)
 
                 if con.open():
                     con.flush()
@@ -58,8 +57,6 @@ class XidScanner(object):
                     if device_found:
                         # Device found, we're done.
                         break
-                else:
-                    continue
 
     def device_at_index(self, index):
         """
@@ -148,7 +145,7 @@ class XidDevice(object):
     def is_response_device(self):
         """
         "Response device" is used loosely here. Second generation StimTrackers are not response
-        devices in a strict sense, they are capable of reporting keypresses via USB.
+        devices in a strict sense, but they are capable of reporting keypresses via USB.
         The only devices you will never get a keypress from are first gen StimTrackers and c-pods.
         """
         return not (self.product_id == b'S' and self.major_fw_version != 2) and self.product_id != b'4'
