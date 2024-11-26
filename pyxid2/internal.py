@@ -93,7 +93,7 @@ class XidConnection(object):
                 self.ftd2xx_con.setBaudRate(self.baudrate)
                 self.ftd2xx_con.setDataCharacteristics(8, 0, 0)
 
-                self.ftd2xx_con.setTimeouts(50, 50)
+                self.ftd2xx_con.setTimeouts(100, 100)
                 self.ftd2xx_con.setUSBParameters(64,64)
                 self.ftd2xx_con.setLatencyTimer(10)
                 self.flush()
@@ -135,7 +135,7 @@ class XidConnection(object):
         bytes_written = 0
         cmd_bytes = []
 
-        self.ftd2xx_con.setTimeouts(50, 50)
+        self.ftd2xx_con.setTimeouts(100, 100)
 
         for i in command:
             if (sys.version_info >= (3, 0)):
@@ -155,7 +155,7 @@ class XidConnection(object):
     def write_bytes(self, command):
         bytes_written = 0
 
-        self.ftd2xx_con.setTimeouts(50, 50)
+        self.ftd2xx_con.setTimeouts(100, 100)
 
         if self.__needs_interbyte_delay:
             for char in command:

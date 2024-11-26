@@ -288,27 +288,14 @@ class XidDevice(object):
         Sets the pulse duration for events in miliseconds when activate_line
         is called
         """
-        if duration > 4294967295:
-            raise ValueError('Duration is too long. Please choose a value '
-                             'less than 4294967296.')
+        command = pack('<ccI', b'm', b'p', duration)
 
-        big_endian = hex(duration)[2:]
-        if len(big_endian) % 2 != 0:
-            big_endian = '0'+big_endian
+        self.con.send_xid_byte_command(command, 0)
 
-        little_endian = []
+    def get_pulse_duration(self):
+        (_, _, _, duration) = unpack('<cccI', self.con.send_xid_command("_mp", 7))
 
-        for i in range(0, len(big_endian), 2):
-            little_endian.insert(0, big_endian[i:i+2])
-
-        for i in range(0, 4-len(little_endian)):
-            little_endian.append('00')
-
-        command = 'mp'
-        for i in little_endian:
-            command += chr(int(i, 16))
-
-        self.con.send_xid_command(command, 0)
+        return duration
 
     def activate_line(self, lines=None, bitmask=None, leave_remaining_lines=False):
         """
@@ -410,11 +397,98 @@ class XidDevice(object):
     def clear_all_lines(self):
         self.con.set_digio_lines_to_mask(0)
 
-    def enable_usb_output(self, selector, enable):
+    def save_to_flash(self):
+        if self.major_fw_version < 2:
+            return
+
+        self.con.send_xid_command("f9")
+
+    # '_ia'
+    # Example: get_single_shot('K')
+    def get_single_shot(self, selector):
+        if self.major_fw_version < 2:
+            return
+        (_, _, _, _, action, delay) = unpack('<cccccI', self.con.send_xid_command("_ia%s" % selector, 9))
+
+        return (action == b'1', delay)
+
+    # 'ia'
+    # Example: set_single_shot('K', True, 150)
+    def set_single_shot(self, selector, action, delay):
+        command = pack('<ccccI', b'i', b'a', selector.encode('latin1'), b'1' if action is True else b'0', delay)
+
+        self.con.send_xid_byte_command(command, 0)
+
+    # '_if'
+    # Example: get_signal_filter('K')
+    def get_signal_filter(self, selector):
+        if self.major_fw_version < 2:
+            return
+        (_, _, _, _, holdOn, holdOff) = unpack('<ccccII', self.con.send_xid_command("_if%s" % selector, 12))
+
+        return (holdOn, holdOff)
+
+    # 'if'
+    # Example: set_signal_filter('K', 100, 200)
+    def set_signal_filter(self, selector, holdOn, holdOff):
+        if self.major_fw_version < 2:
+            return
+        command = pack('<cccII', b'i', b'f', selector.encode('latin1'), holdOn, holdOff)
+
+        self.con.send_xid_byte_command(command, 0)
+
+    # '_io'
+    # Example: get_enable_digital_output('M')
+    def get_enable_digital_output(self, selector):
+        if self.major_fw_version < 2:
+            return
+        (_, _, _, _, enabled) = unpack('<ccccc', self.con.send_xid_command("_io%s" % selector, 5))
+
+        return enabled == b'1'
+
+    # 'io'
+    # Example: set_enable_digital_output('M', False)
+    def set_enable_digital_output(self, selector, enable):
+        if self.major_fw_version < 2:
+            return
+
+        command = 'io%s%s' % (selector, '1' if enable is True else '0')
+        self.con.send_xid_command(command, 0)
+
+    # '_iu'
+    # Example: get_enable_usb_output('M')
+    def get_enable_usb_output(self, selector):
+        if self.major_fw_version < 2:
+            return
+        (_, _, _, _, enabled) = unpack('<ccccc', self.con.send_xid_command("_iu%s" % selector, 5))
+
+        return enabled == b'1'
+
+    # 'iu'
+    # Example: set_enable_usb_output('M', False)
+    def set_enable_usb_output(self, selector, enable):
         if self.major_fw_version < 2:
             return
 
         command = 'iu%s%s' % (selector, '1' if enable is True else '0')
+        self.con.send_xid_command(command, 0)
+
+    # '_ip'
+    # Example: is_input_paused()
+    def is_input_paused(self):
+        if self.major_fw_version < 2:
+            return
+        (_, _, _, paused) = unpack('<cccc', self.con.send_xid_command("_ip", 4))
+
+        return paused == b'0'
+
+    # 'ip'
+    # Example: pause_output(True)
+    def pause_output(self, pause):
+        if self.major_fw_version < 2:
+            return
+
+        command = 'ip%s' % ('0' if pause is True else '1')
         self.con.send_xid_command(command, 0)
 
     def get_pulse_table_bitmask(self):
