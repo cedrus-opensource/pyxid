@@ -22,25 +22,16 @@ class XidConnection(object):
         self.ftd2xx_index = ftd2xx_index
         self.ftd2xx_con = 0
         self.baudrate = baud_rate
-        self.__needs_interbyte_delay = True
         self.__packet_size = XID_PACKET_SIZE
         self.__response_buffer = b''
         self.__response_structs_queue = []
         # The set lines cmd on XID 1 response devices (RB-x30 series, Lumina LP-400 and SV-1)'ah'.
         # In all other cases (ST-1, XID2 devices) 'mh' is used instead.
-        self.__using_stim_tracker = False
-        self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
+        self.__using_st_output = True
         self.__line_state = 0
 
     def set_using_stim_tracker_output(self, using_st=True):
-        if using_st:
-            self.__using_stim_tracker = True
-            self.__set_lines_cmd = 'mh'+chr(0)+chr(0)
-            self.__needs_interbyte_delay = False
-        else:
-            self.__using_stim_tracker = False
-            self.__set_lines_cmd = 'ah'+chr(0)+chr(0)
-            self.__needs_interbyte_delay = True
+            self.__using_st_output = using_st
 
     def set_resp_packet_size(self, st2_packet_size=True):
         if st2_packet_size:
@@ -63,19 +54,19 @@ class XidConnection(object):
         if leave_remaining_lines:
             lines |= self.__line_state
 
-        if self.__using_stim_tracker:
+        if self.__using_st_output:
             self.__set_lines_cmd = 'mh'+chr(lines & 0x000000FF)+chr((lines >> 8) & 0x000000FF)
         else:
             lines_tmp = ~lines
             if lines_tmp < 0:
                 lines_tmp += 65536
-            self.__set_lines_cmd = 'ah'+chr(lines_tmp & 0x000000FF)+chr((lines >> 8) & 0x000000FF)
+            self.__set_lines_cmd = 'ah'+chr(lines_tmp & 0x000000FF)
 
         self.write(self.__set_lines_cmd)
         self.__line_state = lines
 
     def set_digio_lines_to_mask(self, lines):
-        command_char = b'm' if self.__using_stim_tracker else b'a'
+        command_char = b'm' if self.__using_st_output else b'a'
 
         digio_cmd = pack('<ccH', command_char, b'h', lines)
         self.write_bytes(digio_cmd)
@@ -93,7 +84,7 @@ class XidConnection(object):
                 self.ftd2xx_con.setBaudRate(self.baudrate)
                 self.ftd2xx_con.setDataCharacteristics(8, 0, 0)
 
-                self.ftd2xx_con.setTimeouts(100, 100)
+                self.ftd2xx_con.setTimeouts(50, 50)
                 self.ftd2xx_con.setUSBParameters(64,64)
                 self.ftd2xx_con.setLatencyTimer(10)
                 self.flush()
@@ -143,7 +134,7 @@ class XidConnection(object):
             else:
                 cmd_bytes += i
 
-        if self.__needs_interbyte_delay:
+        if True:
             for char in cmd_bytes:
                 bytes_written += self.ftd2xx_con.write(bytes([char]))
                 time.sleep(0.001)
@@ -157,9 +148,9 @@ class XidConnection(object):
 
         self.ftd2xx_con.setTimeouts(100, 100)
 
-        if self.__needs_interbyte_delay:
+        if True:
             for char in command:
-                bytes_written += self.ftd2xx_con.write(char)
+                bytes_written += self.ftd2xx_con.write(bytes([char]))
                 time.sleep(0.001)
         else:
             bytes_written = self.ftd2xx_con.write(command)

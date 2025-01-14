@@ -22,10 +22,11 @@ print("Using ", dev)
 #manually with clear_line() or clear_all_lines().
 dev.set_pulse_duration(300)
 
-for line in range(1, 9):
-    print("raising line {} (bitmask {})".format(line, 2 ** (line-1)))
-    dev.activate_line(lines=line)
-    time.sleep(.3)
+for line in range(0, 8):
+        mask = 2 ** line
+        print("raising line ", mask)
+        dev.set_lines(mask)
+        time.sleep(.3)
 
 dev.clear_all_lines()
 
